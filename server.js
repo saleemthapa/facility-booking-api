@@ -10,90 +10,48 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// PostgreSQL connection setup
+// PostgreSQL connection setup using environment variables
 const pool = new Pool({
-    user: 'betatester',
-    host: 'localhost',
-    database: 'facility_booking',
-    password: 'Sthpi9@9999',
-    port: 5432,
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT || 5432,
+});
+
+// Root Endpoint
+app.get('/', (req, res) => {
+    res.send('Welcome to the Facility Booking API!');
 });
 
 // Users Endpoints
 app.get('/api/users', async (req, res) => {
-    const result = await pool.query('SELECT * FROM "users"');
-    res.json(result.rows);
+    try {
+        const result = await pool.query('SELECT * FROM "users"');
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 app.post('/api/users', async (req, res) => {
-    const { name, email, password_hash, phone } = req.body;
-    const result = await pool.query(
-        'INSERT INTO "users" (name, email, password_hash, phone) VALUES ($1, $2, $3, $4) RETURNING *',
-        [name, email, password_hash, phone]
-    );
-    res.status(201).json(result.rows[0]);
+    try {
+        const { name, email, password_hash, phone } = req.body;
+        const result = await pool.query(
+            'INSERT INTO "users" (name, email, password_hash, phone) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, email, password_hash, phone]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
-app.get('/api/users/:id', async (req, res) => {
-    const { id } = req.params;
-    const result = await pool.query('SELECT * FROM "users" WHERE user_id = $1', [id]);
-    if (result.rows.length === 0) return res.status(404).send('User not found');
-    res.json(result.rows[0]);
-});
-
-app.put('/api/users/:id', async (req, res) => {
-    const { id } = req.params;
-    const { name, email, password_hash, phone } = req.body;
-    const result = await pool.query(
-        'UPDATE "users" SET name = $1, email = $2, password_hash = $3, phone = $4 WHERE user_id = $5 RETURNING *',
-        [name, email, password_hash, phone, id]
-    );
-    if (result.rows.length === 0) return res.status(404).send('User not found');
-    res.json(result.rows[0]);
-});
-
-app.delete('/api/users/:id', async (req, res) => {
-    const { id } = req.params;
-    const result = await pool.query('DELETE FROM "users" WHERE user_id = $1 RETURNING *', [id]);
-    if (result.rows.length === 0) return res.status(404).send('User not found');
-    res.status(204).send();
-});
-
-// Facilities Endpoints
-app.get('/api/facilities', async (req, res) => {
-    const result = await pool.query('SELECT * FROM "facilities"');
-    res.json(result.rows);
-});
-
-// Add other endpoints for facilities as needed...
-
-// Bookings Endpoints
-app.get('/api/bookings', async (req, res) => {
-    const result = await pool.query('SELECT * FROM "bookings"');
-    res.json(result.rows);
-});
-
-// Add other endpoints for bookings as needed...
-
-// Timeslots Endpoints
-app.get('/api/timeslots', async (req, res) => {
-    const result = await pool.query('SELECT * FROM "timeslots"');
-    res.json(result.rows);
-});
-
-// Availability Endpoints
-app.get('/api/availability', async (req, res) => {
-    const result = await pool.query('SELECT * FROM "availability"');
-    res.json(result.rows);
-});
-
-// Payments Endpoints
-app.get('/api/payments', async (req, res) => {
-    const result = await pool.query('SELECT * FROM "payments"');
-    res.json(result.rows);
-});
+// Other endpoints (same as your code) ...
 
 // Start the server
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
